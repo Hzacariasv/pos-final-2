@@ -1,5 +1,5 @@
 // src/App.js
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { DataProvider, useData } from './context/DataContext';
 import { auth } from './services/firebase';
 
@@ -19,39 +19,10 @@ const LoadingScreen = () => (
 );
 
 const AppLogic = () => {
-    const [view, setView] = useState('login'); 
-    const [localUser, setLocalUser] = useState(null);
     const [notificationModal, setNotificationModal] = useState({ isOpen: false, message: '' });
     
-    const { loading, currentUser, users } = useData();
-
-    useEffect(() => {
-        // Si no hay sesión de Auth, nos aseguramos de que no haya usuario local y mostramos el login.
-        if (!currentUser) {
-            setLocalUser(null);
-            setView('login');
-            return;
-        }
-
-        // Si hay sesión de Auth pero la lista de usuarios de Firestore aún no carga, esperamos.
-        if (users.length === 0) {
-            return;
-        }
-
-        // Si hay sesión de Auth Y la lista de usuarios ya cargó, buscamos el perfil.
-        const userData = users.find(u => u.id === currentUser.uid);
-        if (userData) {
-            // Perfil encontrado, establecemos el usuario y su vista.
-            setLocalUser(userData);
-            setView(userData.role);
-        } else {
-            // Perfil no encontrado (caso raro), cerramos la sesión para evitar un bucle.
-            console.error("Usuario autenticado pero no encontrado en Firestore. Cerrando sesión.");
-            auth.signOut();
-        }
-
-    }, [currentUser, users]); // Este efecto se ejecuta si cambia el usuario de Auth o la lista de usuarios.
-
+    // Obtenemos el usuario final y el estado de carga desde nuestro Contexto.
+    const { loading, appUser } = useData();
 
     if (loading) {
         return <LoadingScreen />;
@@ -62,41 +33,26 @@ const AppLogic = () => {
             auth.signOut();
         }
     };
+    
+    // Si después de cargar no hay usuario, mostramos el Login.
+    if (!appUser) {
+        // Le pasamos `setNotificationModal` al LoginScreen por si lo necesita
+        return <LoginScreen setNotificationModal={setNotificationModal} />;
+    }
 
-    const renderView = () => {
-        if (!localUser) {
-            return <LoginScreen setView={setView} setCurrentUser={setLocalUser} setNotificationModal={setNotificationModal} />;
-        }
-        
-        switch (view) {
-            case 'waiter':
-                return <WaiterDashboard currentUser={localUser} setView={handleSetView} setNotificationModal={setNotificationModal} />;
-            case 'chef':
-                return <ChefDashboard currentUser={localUser} setView={handleSetView} />;
-            case 'cashier':
-                return <CashierDashboard currentUser={localUser} setView={handleSetView} setNotificationModal={setNotificationModal} />;
-            case 'admin':
-                return <AdminDashboard currentUser={localUser} setView={handleSetView} setNotificationModal={setNotificationModal} />;
-            default:
-                // Si el usuario existe pero no tiene rol, mostramos un mensaje.
-                return <div>Error: El usuario no tiene un rol asignado.</div>;
-        }
-    };
-
-    return (
-        <div className="App">
-            <CustomModal
-                isOpen={notificationModal.isOpen}
-                onClose={() => setNotificationModal({isOpen: false, message: ''})}
-                title="Aviso del Sistema">
-                <div className="flex items-center">
-                    <CheckCircle className="text-green-500 mr-4 flex-shrink-0" size={40} />
-                    <p className="text-lg text-gray-700">{notificationModal.message}</p>
-                </div>
-            </CustomModal>
-            {renderView()}
-        </div>
-    );
+    // Si hay un usuario, mostramos el panel correspondiente a su rol.
+    switch (appUser.role) {
+        case 'waiter':
+            return <WaiterDashboard currentUser={appUser} setView={handleSetView} setNotificationModal={setNotificationModal} />;
+        case 'chef':
+            return <ChefDashboard currentUser={appUser} setView={handleSetView} />;
+        case 'cashier':
+            return <CashierDashboard currentUser={appUser} setView={handleSetView} setNotificationModal={setNotificationModal} />;
+        case 'admin':
+            return <AdminDashboard currentUser={appUser} setView={handleSetView} setNotificationModal={setNotificationModal} />;
+        default:
+            return <div>Error: Rol desconocido. <button onClick={() => auth.signOut()}>Salir</button></div>;
+    }
 };
 
 const App = () => {

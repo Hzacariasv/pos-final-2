@@ -2,7 +2,7 @@
 import React, { createContext, useState, useEffect, useContext } from 'react';
 import { db, auth } from '../services/firebase';
 import { onAuthStateChanged } from 'firebase/auth';
-import { collection, onSnapshot, doc } from 'firebase/firestore';
+import { collection, onSnapshot, doc, getDoc } from 'firebase/firestore';
 
 const DataContext = createContext();
 
@@ -11,9 +11,8 @@ export const useData = () => {
 };
 
 export const DataProvider = ({ children }) => {
-    const [authLoading, setAuthLoading] = useState(true);
-    const [dataLoading, setDataLoading] = useState(true);
-    const [currentUser, setCurrentUser] = useState(null);
+    const [loading, setLoading] = useState(true);
+    const [appUser, setAppUser] = useState(null); // ÚNICO estado para el usuario final
 
     // Estados para los datos de la tienda
     const [companyInfo, setCompanyInfo] = useState(null);
@@ -26,24 +25,35 @@ export const DataProvider = ({ children }) => {
     const [forcedClosures, setForcedClosures] = useState([]);
 
     useEffect(() => {
-        // Este "oyente" SOLO se encarga de saber si alguien inició sesión o no.
-        const unsubscribeAuth = onAuthStateChanged(auth, (user) => {
-            setCurrentUser(user);
-            setAuthLoading(false); // Terminamos de verificar la autenticación
+        const unsubscribe = onAuthStateChanged(auth, async (user) => {
+            if (user) {
+                // 1. Si hay un usuario de Auth, buscamos su perfil en Firestore
+                const userDocRef = doc(db, "users", user.uid);
+                const userDocSnap = await getDoc(userDocRef);
+
+                if (userDocSnap.exists()) {
+                    // 2. Si el perfil existe, creamos nuestro objeto de usuario final y lo guardamos
+                    setAppUser({ uid: user.uid, ...userDocSnap.data() });
+                } else {
+                    // Si no hay perfil, el usuario no puede continuar.
+                    setAppUser(null);
+                    auth.signOut(); // Cerramos la sesión para evitar bucles
+                }
+            } else {
+                // Si no hay usuario de Auth, nos aseguramos de que no haya usuario en la app
+                setAppUser(null);
+            }
+            // Solo después de verificar todo, terminamos de cargar
+            setLoading(false);
         });
 
-        return () => unsubscribeAuth();
+        return () => unsubscribe();
     }, []);
 
+    // Este efecto carga los datos de la tienda SOLO si ya tenemos un usuario válido
     useEffect(() => {
-        // Este segundo "oyente" SOLO se activa si hay un usuario.
-        if (!currentUser) {
-            setDataLoading(false); // Si no hay usuario, no hay nada que cargar.
-            return;
-        }
+        if (!appUser) return; // Si no hay usuario, no cargamos nada más.
 
-        // Si hay un usuario, empezamos a cargar los datos de la tienda.
-        setDataLoading(true);
         const unsubscribers = [
             onSnapshot(doc(db, "companyInfo", "main"), (doc) => setCompanyInfo(doc.data())),
             onSnapshot(collection(db, "users"), (snapshot) => setUsers(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })))),
@@ -54,16 +64,13 @@ export const DataProvider = ({ children }) => {
             onSnapshot(collection(db, "sales"), (snapshot) => setSales(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })))),
             onSnapshot(collection(db, "forcedClosures"), (snapshot) => setForcedClosures(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })))),
         ];
-        
-        // Asumimos que los datos cargan rápido. En un caso real, se podría manejar un estado de carga por cada colección.
-        setDataLoading(false);
 
         return () => unsubscribers.forEach(unsub => unsub());
-    }, [currentUser]); // <-- Esta es la clave: el efecto se re-ejecuta solo si 'currentUser' cambia.
+    }, [appUser]);
 
     const value = {
-        loading: authLoading || dataLoading,
-        currentUser,
+        loading,
+        appUser, // El nuevo y único objeto de usuario
         companyInfo, users, menu, tables, shifts, kitchenOrders, sales, forcedClosures
     };
 
