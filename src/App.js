@@ -8,8 +8,6 @@ import WaiterDashboard from './views/WaiterDashboard';
 import ChefDashboard from './views/ChefDashboard';
 import CashierDashboard from './views/CashierDashboard';
 import AdminDashboard from './views/AdminDashboard/AdminDashboard';
-import CustomModal from './components/CustomModal';
-import { CheckCircle } from 'lucide-react';
 
 const LoadingScreen = () => (
     <div className="h-screen w-screen flex flex-col justify-center items-center bg-gray-100">
@@ -19,8 +17,7 @@ const LoadingScreen = () => (
 );
 
 const AppLogic = () => {
-    const [notificationModal, setNotificationModal] = useState({ isOpen: false, message: '' });
-    
+        
     // Obtenemos el usuario final y el estado de carga desde nuestro Contexto.
     const { loading, appUser } = useData();
 
