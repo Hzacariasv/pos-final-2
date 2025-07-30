@@ -1,22 +1,16 @@
 // src/App.js
 import React, { useState, useEffect } from 'react';
 import { DataProvider, useData } from './context/DataContext';
-import { auth, db } from './services/firebase';
-import { onAuthStateChanged } from 'firebase/auth';
-import { doc, getDoc } from 'firebase/firestore';
+import { auth } from './services/firebase';
 
-// Todas las vistas se importan juntas aquí
 import LoginScreen from './views/LoginScreen';
 import WaiterDashboard from './views/WaiterDashboard';
 import ChefDashboard from './views/ChefDashboard';
 import CashierDashboard from './views/CashierDashboard';
-import AdminDashboard from './views/AdminDashboard/AdminDashboard'; // Ruta corregida
-
-// Todos los componentes se importan juntos aquí
+import AdminDashboard from './views/AdminDashboard/AdminDashboard';
 import CustomModal from './components/CustomModal';
 import { CheckCircle } from 'lucide-react';
 
-// --- Componentes Internos ---
 const LoadingScreen = () => (
     <div className="h-screen w-screen flex flex-col justify-center items-center bg-gray-100">
         <div className="loader ease-linear rounded-full border-8 border-t-8 border-gray-200 h-32 w-32 mb-4 animate-spin" style={{borderTopColor: '#3498db'}}></div>
@@ -26,36 +20,30 @@ const LoadingScreen = () => (
 
 const AppLogic = () => {
     const [view, setView] = useState('login'); 
-    const [currentUser, setCurrentUser] = useState(null);
+    const [localUser, setLocalUser] = useState(null);
     const [notificationModal, setNotificationModal] = useState({ isOpen: false, message: '' });
-    const [authLoading, setAuthLoading] = useState(true);
     
-    const { loading: dataLoading } = useData();
+    // Obtenemos el usuario y el estado de carga desde nuestro Contexto mejorado
+    const { loading, currentUser, users } = useData();
 
     useEffect(() => {
-        const unsubscribe = onAuthStateChanged(auth, async (user) => {
-            if (user) {
-                const userDocRef = doc(db, "users", user.uid);
-                const userDocSnap = await getDoc(userDocRef);
-                if (userDocSnap.exists()) {
-                    const userData = { id: user.uid, ...userDocSnap.data() };
-                    setCurrentUser(userData);
-                    setView(userData.role);
-                } else {
-                    setView('login');
-                    setCurrentUser(null);
-                    auth.signOut();
-                }
+        if (currentUser && users.length > 0) {
+            // Buscamos el perfil del usuario autenticado en la lista de usuarios de Firestore
+            const userData = users.find(u => u.id === currentUser.uid);
+            if (userData) {
+                setLocalUser(userData);
+                setView(userData.role);
             } else {
-                setView('login');
-                setCurrentUser(null);
+                // El usuario está en Auth pero no en Firestore, lo deslogueamos.
+                auth.signOut();
             }
-            setAuthLoading(false);
-        });
-        return () => unsubscribe();
-    }, []);
+        } else if (!currentUser) {
+            setLocalUser(null);
+            setView('login');
+        }
+    }, [currentUser, users]);
 
-    if (dataLoading || authLoading) {
+    if (loading) {
         return <LoadingScreen />;
     }
 
@@ -66,21 +54,21 @@ const AppLogic = () => {
     };
 
     const renderView = () => {
-        if (!currentUser) {
-            return <LoginScreen setView={setView} setCurrentUser={setCurrentUser} setNotificationModal={setNotificationModal} />;
+        if (!localUser) {
+            return <LoginScreen setView={setView} setCurrentUser={setLocalUser} setNotificationModal={setNotificationModal} />;
         }
-
+        
         switch (view) {
             case 'waiter':
-                return <WaiterDashboard currentUser={currentUser} setView={handleSetView} setNotificationModal={setNotificationModal} />;
+                return <WaiterDashboard currentUser={localUser} setView={handleSetView} setNotificationModal={setNotificationModal} />;
             case 'chef':
-                return <ChefDashboard currentUser={currentUser} setView={handleSetView} />;
+                return <ChefDashboard currentUser={localUser} setView={handleSetView} />;
             case 'cashier':
-                return <CashierDashboard currentUser={currentUser} setView={handleSetView} setNotificationModal={setNotificationModal} />;
+                return <CashierDashboard currentUser={localUser} setView={handleSetView} setNotificationModal={setNotificationModal} />;
             case 'admin':
-                return <AdminDashboard currentUser={currentUser} setView={handleSetView} setNotificationModal={setNotificationModal} />;
+                return <AdminDashboard currentUser={localUser} setView={handleSetView} setNotificationModal={setNotificationModal} />;
             default:
-                return <LoginScreen setView={setView} setCurrentUser={setCurrentUser} setNotificationModal={setNotificationModal} />;
+                return <div>Error: Rol desconocido</div>;
         }
     };
 
@@ -100,7 +88,6 @@ const AppLogic = () => {
     );
 };
 
-// --- Componente Principal ---
 const App = () => {
     return (
         <DataProvider>
