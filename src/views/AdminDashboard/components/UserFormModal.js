@@ -3,7 +3,14 @@ import React, { useState } from 'react';
 import CustomModal from '../../../components/CustomModal';
 
 const UserFormModal = ({ isOpen, onClose, onSave, user }) => {
-    const [formData, setFormData] = useState({ name: user?.name || '', role: user?.role || 'waiter', password: '', color: user?.color || '#cccccc' });
+    // El email ahora es el campo principal para el login. El nombre es un dato adicional.
+    const [formData, setFormData] = useState({
+        name: user?.name || '',
+        email: user?.email || '', // Campo de email que faltaba
+        password: '',
+        role: user?.role || 'waiter',
+        color: user?.color || '#cccccc'
+    });
     
     const handleChange = (e) => {
         const { name, value } = e.target;
@@ -12,21 +19,23 @@ const UserFormModal = ({ isOpen, onClose, onSave, user }) => {
 
     const handleSubmit = (e) => {
         e.preventDefault();
-        if(!formData.name || !formData.role || (!user && !formData.password)){
-            alert("Por favor, complete nombre, rol y contraseña (para usuarios nuevos).");
+        if(!formData.name || !formData.email || !formData.role || (!user && !formData.password)){
+            alert("Por favor, complete todos los campos requeridos.");
             return;
         }
-        const dataToSave = {...formData};
-        if(!dataToSave.password) { delete dataToSave.password; }
-        onSave(dataToSave);
+        onSave(formData);
     };
 
     return (
         <CustomModal isOpen={isOpen} onClose={onClose} title={user ? 'Editar Usuario' : 'Crear Usuario'}>
             <form onSubmit={handleSubmit} className="space-y-4">
                 <div>
-                    <label className="block text-sm font-bold text-gray-700 mb-1">Nombre Completo</label>
+                    <label className="block text-sm font-bold text-gray-700 mb-1">Nombre Completo (para mostrar)</label>
                     <input type="text" name="name" value={formData.name} onChange={handleChange} className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500" required/>
+                </div>
+                 <div>
+                    <label className="block text-sm font-bold text-gray-700 mb-1">Email (para iniciar sesión)</label>
+                    <input type="email" name="email" value={formData.email} onChange={handleChange} className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500" required disabled={!!user} />
                 </div>
                 <div>
                     <label className="block text-sm font-bold text-gray-700 mb-1">Contraseña</label>
