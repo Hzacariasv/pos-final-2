@@ -1,4 +1,3 @@
-// src/views/AdminDashboard/components/UserManagementPanel.js
 import React, { useState, useMemo } from 'react';
 import { useData } from '../../../context/DataContext';
 import { db, auth } from '../../../services/firebase';
@@ -12,7 +11,7 @@ const UserManagementPanel = ({ setNotificationModal }) => {
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [editingUser, setEditingUser] = useState(null);
 
-    // CAMBIO AQUÍ: Calculamos las estadísticas de usuarios
+    // MEJORA: Calculamos las estadísticas de usuarios para el panel lateral.
     const userStats = useMemo(() => {
         const roles = { admin: 0, cashier: 0, chef: 0, waiter: 0 };
         users.forEach(user => {
@@ -82,7 +81,7 @@ const UserManagementPanel = ({ setNotificationModal }) => {
                 </button>
             </div>
 
-            {/* CAMBIO AQUÍ: Nueva estructura de Grid para PC */}
+            {/* MEJORA: Nueva estructura de Grid para PC para incluir el panel de estadísticas */}
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                 
                 {/* Columna de la Tabla */}
@@ -112,7 +111,7 @@ const UserManagementPanel = ({ setNotificationModal }) => {
                     </table>
                 </div>
 
-                {/* CAMBIO AQUÍ: Nueva Columna de Estadísticas (solo visible en pantallas grandes) */}
+                {/* MEJORA: Nueva Columna de Estadísticas (solo visible en pantallas grandes) */}
                 <div className="lg:col-span-1 bg-gray-50 p-6 rounded-lg border">
                     <h2 className="text-xl font-bold text-gray-700 mb-4 flex items-center gap-2"><Users size={24}/> Resumen</h2>
                     <div className="space-y-3">
