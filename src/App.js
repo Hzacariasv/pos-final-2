@@ -14,7 +14,7 @@ import AdminDashboard from './views/AdminDashboard/AdminDashboard'; // Ruta corr
 
 // Todos los componentes se importan juntos aquí
 import CustomModal from './components/CustomModal';
-import { CheckCircle, AlertCircle } from 'lucide-react';
+import { CheckCircle } from 'lucide-react';
 
 // --- Componentes Internos ---
 const LoadingScreen = () => (
