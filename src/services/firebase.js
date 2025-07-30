@@ -4,7 +4,7 @@ import { getAuth } from 'firebase/auth';
 import { getFirestore } from 'firebase/firestore';
 
 const firebaseConfig = {
-    apiKey: "AIzaSyCdG8ZudnO9TOEtKKqm-viL-NILr1y5bOs",
+    apiKey: process.env.REACT_APP_GOOGLE_API_KEY,
     authDomain: "my-pos-restaurant-8e1a2.firebaseapp.com",
     projectId: "my-pos-restaurant-8e1a2",
     storageBucket: "my-pos-restaurant-8e1a2.firebasestorage.app",
