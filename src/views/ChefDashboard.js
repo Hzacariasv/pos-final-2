@@ -9,7 +9,6 @@ const ChefDashboard = ({ currentUser, setView }) => {
     const [activeTab, setActiveTab] = useState('pending');
     const [checkedItems, setCheckedItems] = useState({});
 
-    // Obtenemos los datos desde el Contexto
     const { kitchenOrders } = useData();
 
     const handleCheckItem = (orderId, itemId) => {
@@ -82,7 +81,8 @@ const ChefDashboard = ({ currentUser, setView }) => {
                     <button onClick={() => setActiveTab('pending')} className={`flex-1 py-3 px-6 font-bold text-lg transition-all duration-300 ${activeTab === 'pending' ? 'border-b-4 border-red-500 text-red-600' : 'text-gray-500 hover:bg-gray-50'}`}>Pendientes ({pendingOrders.length})</button>
                     <button onClick={() => setActiveTab('ready')} className={`flex-1 py-3 px-6 font-bold text-lg transition-all duration-300 ${activeTab === 'ready' ? 'border-b-4 border-green-500 text-green-600' : 'text-gray-500 hover:bg-gray-50'}`}>Listos ({readyOrders.length})</button>
                 </div>
-                <div className="p-4 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+                {/* CAMBIO AQUÍ: Añadimos 2xl:grid-cols-5 para pantallas extra grandes */}
+                <div className="p-4 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-4">
                     {activeTab === 'pending' && pendingOrders.map(order => <OrderCard key={order.id} order={order} />)}
                     {activeTab === 'ready' && readyOrders.map(order => <OrderCard key={order.id} order={order} />)}
                      {activeTab === 'pending' && pendingOrders.length === 0 && <p className="col-span-full text-center text-gray-500 py-10">No hay pedidos pendientes.</p>}

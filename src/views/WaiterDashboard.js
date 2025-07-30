@@ -11,12 +11,10 @@ const WaiterDashboard = ({ currentUser, setView, setNotificationModal }) => {
     const [currentOrder, setCurrentOrder] = useState({ items: [], customerName: '', status: 'new' });
     const [timeRemaining, setTimeRemaining] = useState('');
     
-    // Obtenemos los datos desde el Contexto
     const { menu, tables, shifts } = useData();
 
     const waiterShift = shifts.find(s => s.waiterId === currentUser.id && s.endTime && s.endTime.toDate() > new Date());
     
-    // El resto de la lógica del componente no cambia, solo la forma en que recibe los datos.
     useEffect(() => {
         if (!waiterShift || !waiterShift.endTime) return;
         const interval = setInterval(() => {
@@ -37,6 +35,7 @@ const WaiterDashboard = ({ currentUser, setView, setNotificationModal }) => {
     }, [waiterShift]);
 
     useEffect(() => {
+        if (!tables || !currentUser || !setNotificationModal) return;
         const myTables = tables.filter(t => t.waiterId === currentUser.id);
         myTables.forEach(table => {
             if (table.status === 'ready') {
@@ -46,7 +45,7 @@ const WaiterDashboard = ({ currentUser, setView, setNotificationModal }) => {
                 setNotificationModal({isOpen: true, message: `¡Mesa ${table.name} está lista para recoger!`});
             }
         });
-    }, [tables, currentUser.id, setNotificationModal]);
+    }, [tables, currentUser, setNotificationModal]);
 
     const handleSelectTable = (table) => {
         if (table.status === 'free') {
@@ -126,7 +125,6 @@ const WaiterDashboard = ({ currentUser, setView, setNotificationModal }) => {
     const canSendToKitchen = currentOrder.status === 'confirmed' && currentOrder.items.length > 0;
     const canBill = selectedTable?.status === 'ready';
 
-    // El JSX/HTML no cambia
     return (
         <div className="h-screen w-screen bg-gray-100 grid grid-cols-12 grid-rows-1 auto-rows-auto gap-3 p-3 font-sans">
             <header className="col-span-12 bg-white rounded-lg shadow-md p-3 flex justify-between items-center">
@@ -234,7 +232,8 @@ const WaiterDashboard = ({ currentUser, setView, setNotificationModal }) => {
                     {categories.map(category => (
                         <div key={category} className="mb-5">
                             <h3 className="font-bold text-lg text-gray-700 mb-3 border-b-2 border-gray-200 pb-2">{category}</h3>
-                            <div className="grid grid-cols-2 lg:grid-cols-3 gap-3">
+                            {/* CAMBIO AQUÍ: Añadimos xl:grid-cols-4 para pantallas más anchas */}
+                            <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
                                 {menu.filter(p => p.category === category && p.available && p.stock > 0).map(product => (
                                     <button key={product.id} onClick={() => addToOrder(product)} disabled={!selectedTable}
                                         className="bg-white border border-gray-200 rounded-lg p-2 text-center hover:bg-blue-50 hover:border-blue-500 transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-white shadow-sm hover:shadow-md">
