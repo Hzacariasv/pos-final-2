@@ -1,5 +1,5 @@
 // src/App.js
-import React, { useState } from 'react';
+import React from 'react';
 import { DataProvider, useData } from './context/DataContext';
 import { auth } from './services/firebase';
 
@@ -17,8 +17,6 @@ const LoadingScreen = () => (
 );
 
 const AppLogic = () => {
-        
-    // Obtenemos el usuario final y el estado de carga desde nuestro Contexto.
     const { loading, appUser } = useData();
 
     if (loading) {
@@ -31,22 +29,19 @@ const AppLogic = () => {
         }
     };
     
-    // Si después de cargar no hay usuario, mostramos el Login.
     if (!appUser) {
-        // Le pasamos `setNotificationModal` al LoginScreen por si lo necesita
-        return <LoginScreen setNotificationModal={setNotificationModal} />;
+        return <LoginScreen />;
     }
 
-    // Si hay un usuario, mostramos el panel correspondiente a su rol.
     switch (appUser.role) {
         case 'waiter':
-            return <WaiterDashboard currentUser={appUser} setView={handleSetView} setNotificationModal={setNotificationModal} />;
+            return <WaiterDashboard currentUser={appUser} setView={handleSetView} />;
         case 'chef':
             return <ChefDashboard currentUser={appUser} setView={handleSetView} />;
         case 'cashier':
-            return <CashierDashboard currentUser={appUser} setView={handleSetView} setNotificationModal={setNotificationModal} />;
+            return <CashierDashboard currentUser={appUser} setView={handleSetView} />;
         case 'admin':
-            return <AdminDashboard currentUser={appUser} setView={handleSetView} setNotificationModal={setNotificationModal} />;
+            return <AdminDashboard currentUser={appUser} setView={handleSetView} />;
         default:
             return <div>Error: Rol desconocido. <button onClick={() => auth.signOut()}>Salir</button></div>;
     }
