@@ -23,25 +23,35 @@ const AppLogic = () => {
     const [localUser, setLocalUser] = useState(null);
     const [notificationModal, setNotificationModal] = useState({ isOpen: false, message: '' });
     
-    // Obtenemos el usuario y el estado de carga desde nuestro Contexto mejorado
     const { loading, currentUser, users } = useData();
 
     useEffect(() => {
-        if (currentUser && users.length > 0) {
-            // Buscamos el perfil del usuario autenticado en la lista de usuarios de Firestore
-            const userData = users.find(u => u.id === currentUser.uid);
-            if (userData) {
-                setLocalUser(userData);
-                setView(userData.role);
-            } else {
-                // El usuario está en Auth pero no en Firestore, lo deslogueamos.
-                auth.signOut();
-            }
-        } else if (!currentUser) {
+        // Si no hay sesión de Auth, nos aseguramos de que no haya usuario local y mostramos el login.
+        if (!currentUser) {
             setLocalUser(null);
             setView('login');
+            return;
         }
-    }, [currentUser, users]);
+
+        // Si hay sesión de Auth pero la lista de usuarios de Firestore aún no carga, esperamos.
+        if (users.length === 0) {
+            return;
+        }
+
+        // Si hay sesión de Auth Y la lista de usuarios ya cargó, buscamos el perfil.
+        const userData = users.find(u => u.id === currentUser.uid);
+        if (userData) {
+            // Perfil encontrado, establecemos el usuario y su vista.
+            setLocalUser(userData);
+            setView(userData.role);
+        } else {
+            // Perfil no encontrado (caso raro), cerramos la sesión para evitar un bucle.
+            console.error("Usuario autenticado pero no encontrado en Firestore. Cerrando sesión.");
+            auth.signOut();
+        }
+
+    }, [currentUser, users]); // Este efecto se ejecuta si cambia el usuario de Auth o la lista de usuarios.
+
 
     if (loading) {
         return <LoadingScreen />;
@@ -68,7 +78,8 @@ const AppLogic = () => {
             case 'admin':
                 return <AdminDashboard currentUser={localUser} setView={handleSetView} setNotificationModal={setNotificationModal} />;
             default:
-                return <div>Error: Rol desconocido</div>;
+                // Si el usuario existe pero no tiene rol, mostramos un mensaje.
+                return <div>Error: El usuario no tiene un rol asignado.</div>;
         }
     };
 
